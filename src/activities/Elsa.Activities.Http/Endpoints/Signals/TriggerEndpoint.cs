@@ -1,7 +1,7 @@
-using System.Threading;
 using System.Threading.Tasks;
 using Elsa.Activities.Signaling.Services;
 using Microsoft.AspNetCore.Mvc;
+using Open.Linq.AsyncExtensions;
 
 namespace Elsa.Activities.Http.Endpoints.Signals
 {
@@ -14,14 +14,13 @@ namespace Elsa.Activities.Http.Endpoints.Signals
         public TriggerEndpoint(ISignaler signaler) => _signaler = signaler;
 
         [HttpGet, HttpPost]
-        public async Task<IActionResult> Handle(string token, CancellationToken cancellationToken)
+        public async Task<IActionResult> Handle(string token)
         {
-            if (!await _signaler.TriggerSignalTokenAsync(token, cancellationToken: cancellationToken))
-                return NotFound();
+            var result = await _signaler.TriggerSignalTokenAsync(token).ToList();
 
             return HttpContext.Response.HasStarted
                 ? new EmptyResult()
-                : Accepted();
+                : Ok(result);
         }
     }
 }

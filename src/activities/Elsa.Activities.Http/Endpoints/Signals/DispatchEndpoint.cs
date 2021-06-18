@@ -1,7 +1,7 @@
-using System.Threading;
 using System.Threading.Tasks;
 using Elsa.Activities.Signaling.Services;
 using Microsoft.AspNetCore.Mvc;
+using Open.Linq.AsyncExtensions;
 
 namespace Elsa.Activities.Http.Endpoints.Signals
 {
@@ -18,12 +18,10 @@ namespace Elsa.Activities.Http.Endpoints.Signals
         }
 
         [HttpGet, HttpPost]
-        public async Task<IActionResult> Handle(string token, CancellationToken cancellationToken)
+        public async Task<IActionResult> Handle(string token)
         {
-            if (!await _signaler.DispatchSignalTokenAsync(token, cancellationToken: cancellationToken))
-                return NotFound();
-            
-            return Accepted();
+            var pendingWorkflows = await _signaler.DispatchSignalTokenAsync(token).ToList();
+            return Accepted(pendingWorkflows);
         }
     }
 }

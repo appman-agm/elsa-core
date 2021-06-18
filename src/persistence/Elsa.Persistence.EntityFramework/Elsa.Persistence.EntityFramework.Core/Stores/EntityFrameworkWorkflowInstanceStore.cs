@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
-using EFCore.BulkExtensions;
 using Elsa.Models;
 using Elsa.Persistence.EntityFramework.Core.Extensions;
 using Elsa.Persistence.EntityFramework.Core.Services;
@@ -62,7 +61,6 @@ namespace Elsa.Persistence.EntityFramework.Core.Stores
                 entity.Output,
                 entity.Variables,
                 entity.ActivityData,
-                entity.ActivityOutput,
                 entity.BlockingActivities,
                 entity.ScheduledActivities,
                 entity.Scopes,
@@ -82,7 +80,6 @@ namespace Elsa.Persistence.EntityFramework.Core.Stores
                 entity.Output,
                 entity.Variables,
                 entity.ActivityData,
-                entity.ActivityOutput,
                 entity.BlockingActivities,
                 entity.ScheduledActivities,
                 entity.Scopes,
@@ -98,7 +95,6 @@ namespace Elsa.Persistence.EntityFramework.Core.Stores
             entity.Output = data.Output;
             entity.Variables = data.Variables;
             entity.ActivityData = data.ActivityData;
-            entity.ActivityOutput = data.ActivityOutput;
             entity.BlockingActivities = data.BlockingActivities;
             entity.ScheduledActivities = data.ScheduledActivities;
             entity.Scopes = data.Scopes;

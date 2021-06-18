@@ -109,8 +109,10 @@ export class ElsaWorkflowDefinitionEditorScreen {
 
   @Watch("serverUrl")
   async serverUrlChangedHandler(newValue: string) {
-    if (newValue && newValue.length > 0)
+    if (newValue && newValue.length > 0) {
       await this.loadActivityDescriptors();
+      await this.loadWorkflowStorageDescriptors();
+    }
   }
 
   @Watch("monacoLibPath")
@@ -148,6 +150,11 @@ export class ElsaWorkflowDefinitionEditorScreen {
   async loadActivityDescriptors() {
     const client = createElsaClient(this.serverUrl);
     state.activityDescriptors = await client.activitiesApi.list();
+  }
+
+  async loadWorkflowStorageDescriptors() {
+    const client = createElsaClient(this.serverUrl);
+    state.workflowStorageDescriptors = await client.workflowStorageProvidersApi.list();
   }
 
   updateWorkflowDefinition(value: WorkflowDefinition) {
@@ -203,8 +210,8 @@ export class ElsaWorkflowDefinitionEditorScreen {
         persistWorkflow: x.persistWorkflow,
         loadWorkflowContext: x.loadWorkflowContext,
         saveWorkflowContext: x.saveWorkflowContext,
-        persistOutput: x.persistOutput,
-        properties: x.properties
+        properties: x.properties,
+        propertyStorageProviders: x.propertyStorageProviders
       })),
       connections: workflowModel.connections.map<ConnectionDefinition>(x => ({
         sourceActivityId: x.sourceId,
@@ -217,6 +224,7 @@ export class ElsaWorkflowDefinitionEditorScreen {
     this.publishing = publish;
 
     try {
+      console.debug("Saving workflow...");
       workflowDefinition = await client.workflowDefinitionsApi.save(request);
       this.workflowDefinition = workflowDefinition;
       this.workflowModel = this.mapWorkflowModel(workflowDefinition);
@@ -266,7 +274,7 @@ export class ElsaWorkflowDefinitionEditorScreen {
   mapActivityModel(source: ActivityDefinition): ActivityModel {
     const activityDescriptors: Array<ActivityDescriptor> = state.activityDescriptors;
     const activityDescriptor = activityDescriptors.find(x => x.type == source.type);
-
+    
     return {
       activityId: source.activityId,
       description: source.description,
@@ -275,10 +283,10 @@ export class ElsaWorkflowDefinitionEditorScreen {
       type: source.type,
       properties: source.properties,
       outcomes: [...activityDescriptor.outcomes],
-      persistOutput: source.persistOutput,
       persistWorkflow: source.persistWorkflow,
       saveWorkflowContext: source.saveWorkflowContext,
-      loadWorkflowContext: source.loadWorkflowContext
+      loadWorkflowContext: source.loadWorkflowContext,
+      propertyStorageProviders: source.propertyStorageProviders
     }
   }
 
@@ -354,7 +362,7 @@ export class ElsaWorkflowDefinitionEditorScreen {
 
   renderCanvas() {
 
-    const activityContextMenuButton =
+    const activityContextMenuButton = (activity: ActivityModel) =>
       `<div class="context-menu-wrapper elsa-flex-shrink-0">
             <button aria-haspopup="true"
                     class="elsa-w-8 elsa-h-8 elsa-inline-flex elsa-items-center elsa-justify-center elsa-text-gray-400 elsa-rounded-full elsa-bg-transparent hover:elsa-text-gray-500 focus:elsa-outline-none focus:elsa-text-gray-500 focus:elsa-bg-gray-100 elsa-transition elsa-ease-in-out elsa-duration-150">
@@ -370,12 +378,12 @@ export class ElsaWorkflowDefinitionEditorScreen {
 
     return (
       <div class="elsa-flex-1 elsa-flex elsa-relative">
-        <elsa-designer-tree model={this.workflowModel} 
-                            mode={WorkflowDesignerMode.Edit} 
+        <elsa-designer-tree model={this.workflowModel}
+                            mode={WorkflowDesignerMode.Edit}
                             activityContextMenuButton={activityContextMenuButton}
                             onActivityContextMenuButtonClicked={e => this.onActivityContextMenuButtonClicked(e)}
                             activityContextMenu={this.activityContextMenuState}
-                            class="elsa-flex-1" 
+                            class="elsa-flex-1"
                             ref={el => this.designer = el}/>
         {this.renderWorkflowSettingsButton()}
         {this.renderActivityContextMenu()}
