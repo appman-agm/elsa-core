@@ -30,8 +30,9 @@ namespace Elsa.Models
         public Instant? CancelledAt { get; set; }
         public Instant? FaultedAt { get; set; }
         public Variables Variables { get; set; }
+        public WorkflowInputReference? Input { get; set; }
         public WorkflowOutputReference? Output { get; set; }
-        public IDictionary<string, IDictionary<string, object>> ActivityData { get; set; } = new Dictionary<string, IDictionary<string, object>>();
+        public IDictionary<string, IDictionary<string, object?>> ActivityData { get; set; } = new Dictionary<string, IDictionary<string, object?>>();
 
         public HashSet<BlockingActivity> BlockingActivities
         {

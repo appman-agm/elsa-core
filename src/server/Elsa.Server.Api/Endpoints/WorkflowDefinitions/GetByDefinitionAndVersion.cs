@@ -39,8 +39,8 @@ namespace Elsa.Server.Api.Endpoints.WorkflowDefinitions
         ]
         public async Task<IActionResult> Handle(string workflowDefinitionId, VersionOptions versionOptions, CancellationToken cancellationToken = default)
         {
-            var workflowDefinition = await _workflowDefinitionStore.FindAsync(new WorkflowDefinitionIdSpecification(workflowDefinitionId).WithVersionOptions(versionOptions), cancellationToken);
-            return workflowDefinition == null ? (IActionResult) NotFound() : Json(workflowDefinition, _serializer.GetSettings());
+            var workflowDefinition = await _workflowDefinitionStore.FindAsync(new WorkflowDefinitionIdSpecification(workflowDefinitionId, versionOptions), cancellationToken);
+            return workflowDefinition == null ? NotFound() : Json(workflowDefinition, _serializer.GetSettings());
         }
     }
 }

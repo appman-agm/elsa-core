@@ -91,9 +91,9 @@ export class ElsaWorkflowInstanceJournal {
   async componentWillLoad() {
     await this.workflowInstanceIdChangedHandler(this.workflowInstanceId);
   }
-  
+
   filterRecords(){
-    return 
+    return
   }
 
   selectActivityRecordInternal(record?: WorkflowExecutionLogRecord) {
@@ -166,7 +166,7 @@ export class ElsaWorkflowInstanceJournal {
       <section class={`${panelHiddenClass} elsa-fixed elsa-top-0 elsa-right-0 elsa-bottom-0 elsa-overflow-hidden`} aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
         <div class="elsa-absolute elsa-inset-0 elsa-overflow-hidden">
           <div class="elsa-absolute elsa-inset-0" aria-hidden="true"/>
-          <div class="elsa-fixed elsa-inset-y-0 elsa-right-0 elsa-pl-10 max-elsa-w-full elsa-flex sm:elsa-pl-16">
+          <div class="elsa-fixed elsa-inset-y-0 elsa-top-16 elsa-right-0 elsa-pl-10 max-elsa-w-full elsa-flex sm:elsa-pl-16">
 
             <div ref={el => this.el = el}
                  data-transition-enter="elsa-transform elsa-transition elsa-ease-in-out elsa-duration-500 sm:elsa-duration-700"
@@ -289,7 +289,7 @@ export class ElsaWorkflowInstanceJournal {
         <li>
           <div onClick={() => this.onRecordClick(record)} class={`${recordClass} elsa-border-2 elsa-cursor-pointer elsa-p-4 elsa-rounded`}>
             <div class="elsa-relative elsa-pb-10">
-              {isLastItem ? undefined : <div class="elsa-flex elsa-absolute top-8 elsa-left-4 -elsa-ml-px elsa-h-full elsa-w-0.5 elsa-bg-gray-200">
+              {isLastItem ? undefined : <div class="elsa-flex elsa-absolute top-8 elsa-left-4 -elsa-ml-px elsa-h-full elsa-w-0.5">
                 <div class="elsa-flex elsa-flex-1 elsa-items-center elsa-relative elsa-right-10">
                   <span class="elsa-flex-1 elsa-text-sm elsa-text-gray-500 elsa-w-max elsa-bg-white elsa-p-1 elsa-rounded">{deltaTimeText}</span>
                 </div>
@@ -396,9 +396,12 @@ export class ElsaWorkflowInstanceJournal {
     if (!activityModel)
       return <p>No activity selected</p>;
 
+    // Hide expressions field from properties so that we only display the evaluated value.
+    const model = {...activityModel, properties: activityModel.properties.map(x => ({ name: x.name, value: x.value }))}
+
     return (
       <div>
-        <pre>{JSON.stringify(activityModel, null, 2)}</pre>
+        <pre>{JSON.stringify(model, null, 2)}</pre>
       </div>
     );
   };

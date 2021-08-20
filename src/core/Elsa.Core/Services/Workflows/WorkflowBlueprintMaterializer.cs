@@ -43,7 +43,7 @@ namespace Elsa.Services.Workflows
             connections.AddRange(workflowDefinition.Connections.Select(x => ResolveConnection(x, activityBlueprints)).Where(x => x != null).Select(x => x!));
             propertyProviders.AddRange(await CreatePropertyProviders(workflowDefinition, cancellationToken));
 
-            return new WorkflowBlueprint(
+            var workflowBlueprint = new WorkflowBlueprint(
                 workflowDefinition.DefinitionId,
                 workflowDefinition.Version,
                 workflowDefinition.TenantId,
@@ -54,6 +54,7 @@ namespace Elsa.Services.Workflows
                 workflowDefinition.IsLatest,
                 workflowDefinition.IsPublished,
                 workflowDefinition.Tag,
+                workflowDefinition.Channel,
                 workflowDefinition.Variables,
                 workflowDefinition.CustomAttributes,
                 workflowDefinition.ContextOptions,
@@ -63,6 +64,11 @@ namespace Elsa.Services.Workflows
                 connections,
                 new ActivityPropertyProviders(propertyProviders.ToDictionary(x => x.Key, x => x.Value))
             );
+
+            foreach (var compositeActivityBlueprint in compositeActivityBlueprints) 
+                ((CompositeActivityBlueprint) compositeActivityBlueprint).Parent = workflowBlueprint;
+
+            return workflowBlueprint;
         }
 
         private async Task<ActivityPropertyProviders> CreatePropertyProviders(ICompositeActivityDefinition compositeActivityDefinition, CancellationToken cancellationToken)
@@ -73,13 +79,13 @@ namespace Elsa.Services.Workflows
             foreach (var activityDefinition in activityDefinitions)
             {
                 var activityType = await _activityTypeService.GetActivityTypeAsync(activityDefinition.Type, cancellationToken);
-                var activityDescriptor = activityType.Describe();
+                var activityDescriptor = await activityType.DescribeAsync();
                 var propertyDescriptors = activityDescriptor.InputProperties;
 
                 foreach (var property in activityDefinition.Properties)
                 {
                     var propertyDescriptor = propertyDescriptors.FirstOrDefault(x => x.Name == property.Name);
-                    
+
                     if (propertyDescriptor == null)
                     {
                         _logger.LogWarning("Could not find the specified property '{PropertyName}' for activity type {ActivityTypeName}", property.Name, activityType.TypeName);
@@ -116,7 +122,7 @@ namespace Elsa.Services.Workflows
         {
             var list = new List<IActivityBlueprint>();
             var activityType = await _activityTypeService.GetActivityTypeAsync(activityDefinition.Type, cancellationToken);
-            
+
             if (activityDefinition is CompositeActivityDefinition compositeActivityDefinition)
             {
                 var manyActivityBlueprints = await Task.WhenAll(compositeActivityDefinition.Activities.Select(async x => await CreateBlueprintsAsync(x, cancellationToken)));
@@ -149,25 +155,25 @@ namespace Elsa.Services.Workflows
             else if (typeof(CompositeActivity).IsAssignableFrom(activityType.Type))
             {
                 var compositeActivity = (CompositeActivity) ActivatorUtilities.CreateInstance(_serviceProvider, activityType.Type);
-                var compositeActivityBuilder = new CompositeActivityBuilder(_serviceProvider, _startingActivitiesProvider, activityType.Type, activityType.TypeName)
-                {
-                    ActivityId = activityDefinition.ActivityId,
-                    Name = activityDefinition.Name,
-                    DisplayName = activityDefinition.DisplayName,
-                    Description = activityDefinition.Description,
-                    PersistWorkflowEnabled = activityDefinition.PersistWorkflow,
-                    LoadWorkflowContextEnabled = activityDefinition.LoadWorkflowContext,
-                    SaveWorkflowContextEnabled = activityDefinition.SaveWorkflowContext,
-                    PropertyStorageProviders = activityDefinition.PropertyStorageProviders
-                };
-                
+                var compositeActivityBuilder = new CompositeActivityBuilder(_serviceProvider, _startingActivitiesProvider, activityType.Type, activityType.TypeName);
+
                 compositeActivity.Build(compositeActivityBuilder);
+                
+                // Ensure the composite activity is assigned the same properties as the activity definition referencing this activity.
+                compositeActivityBuilder.ActivityId = activityDefinition.ActivityId;
+                compositeActivityBuilder.Name = activityDefinition.Name;
+                compositeActivityBuilder.DisplayName = activityDefinition.DisplayName;
+                compositeActivityBuilder.Description = activityDefinition.Description;
+                compositeActivityBuilder.PersistWorkflowEnabled = activityDefinition.PersistWorkflow;
+                compositeActivityBuilder.LoadWorkflowContextEnabled = activityDefinition.LoadWorkflowContext;
+                compositeActivityBuilder.SaveWorkflowContextEnabled = activityDefinition.SaveWorkflowContext;
+                compositeActivityBuilder.PropertyStorageProviders = activityDefinition.PropertyStorageProviders;
 
                 var compositeActivityBlueprint = compositeActivityBuilder.Build($"{activityDefinition.ActivityId}:activity");
 
                 list.Add(compositeActivityBlueprint);
                 list.AddRange(compositeActivityBlueprint.Activities);
-                
+
                 // Connect the composite activity to its starting activities.
                 var startActivities = _startingActivitiesProvider.GetStartActivities(compositeActivityBlueprint).ToList();
                 compositeActivityBlueprint.Connections.AddRange(startActivities.Select(x => new Connection(compositeActivityBlueprint, x, CompositeActivity.Enter)));

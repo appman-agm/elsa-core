@@ -1,4 +1,4 @@
-using System;
+using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -132,6 +132,9 @@ namespace Elsa.Activities.Http
 
                 return;
             }
+            
+            if (content is Stream stream) 
+                content = await stream.ReadBytesToEndAsync(cancellationToken);
 
             if (content is byte[] buffer)
             {
